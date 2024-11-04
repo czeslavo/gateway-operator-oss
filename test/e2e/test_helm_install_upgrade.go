@@ -147,7 +147,7 @@ func TestHelmUpgrade(t *testing.T) {
 			// TODO: use renovate to bump the version in these 2 lines.
 			// https://github.com/Kong/gateway-operator/issues/121
 			name:        "upgrade from 1.2.3 to 1.3.0",
-			fromVersion: "1.2.0", // renovate: datasource=docker packageName=kong/gateway-operator-oss depName=kong/gateway-operator-oss@only-patch
+			fromVersion: "1.2.3", // renovate: datasource=docker packageName=kong/gateway-operator-oss depName=kong/gateway-operator-oss@only-patch
 			toVersion:   "1.3.0", // renovate: datasource=docker depName=kong/gateway-operator-oss
 			objectsToDeploy: []client.Object{
 				&operatorv1beta1.GatewayConfiguration{
