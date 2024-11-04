@@ -28,6 +28,18 @@ import (
 	"github.com/kong/gateway-operator/test/helpers"
 )
 
+const (
+	// DefaultControlPlaneVersion is the default version of the ControlPlane to use.
+	//
+	// NOTE: This needs to be a full semver version (i.e. it needs to include
+	// the minor and the patch version). The reason for this is that it's used in the
+	// tests, e.g. https://github.com/Kong/gateway-operator/blob/02bd1e11243/test/e2e/environment_test.go#L201-L206
+	// and those tests create KIC's URLs for things like roles or CRDs.
+	// Since KIC only defines the full tags in its repo (as expected) we cannot use
+	// a partial version here, as it would not match KIC's tag.
+	DefaultControlPlaneVersion = "3.3.0" // renovate: datasource=docker depName=kong/kubernetes-ingress-controller
+)
+
 func init() {
 	addTestsToTestSuite(TestHelmUpgrade)
 }
@@ -69,7 +81,7 @@ func TestHelmUpgrade(t *testing.T) {
 		{
 			name:        "upgrade from 1.2.0 to 1.2.3",
 			fromVersion: "1.2.0",
-			toVersion:   "1.2.3",
+			toVersion:   "1.2.2",
 			objectsToDeploy: []client.Object{
 				&operatorv1beta1.GatewayConfiguration{
 					ObjectMeta: metav1.ObjectMeta{
@@ -135,8 +147,8 @@ func TestHelmUpgrade(t *testing.T) {
 			// TODO: use renovate to bump the version in these 2 lines.
 			// https://github.com/Kong/gateway-operator/issues/121
 			name:        "upgrade from 1.2.3 to 1.3.0",
-			fromVersion: "1.2.3",
-			toVersion:   "1.3.0",
+			fromVersion: "1.2.0", // renovate: datasource=docker packageName=kong/gateway-operator-oss depName=kong/gateway-operator-oss@only-patch
+			toVersion:   "1.3.0", // renovate: datasource=docker depName=kong/gateway-operator-oss
 			objectsToDeploy: []client.Object{
 				&operatorv1beta1.GatewayConfiguration{
 					ObjectMeta: metav1.ObjectMeta{
