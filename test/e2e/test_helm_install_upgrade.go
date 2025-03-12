@@ -148,7 +148,7 @@ func TestHelmUpgrade(t *testing.T) {
 			// https://github.com/Kong/gateway-operator/issues/121
 			name:        "upgrade from 1.2.3 to 1.3.0",
 			fromVersion: "1.2.0", // renovate: datasource=docker packageName=kong/gateway-operator-oss depName=kong/gateway-operator-oss@only-patch
-			toVersion:   "1.3.0", // renovate: datasource=docker depName=kong/gateway-operator-oss
+			toVersion:   "1.5.0", // renovate: datasource=docker depName=kong/gateway-operator-oss
 			objectsToDeploy: []client.Object{
 				&operatorv1beta1.GatewayConfiguration{
 					ObjectMeta: metav1.ObjectMeta{
