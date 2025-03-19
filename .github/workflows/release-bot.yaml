@@ -50,72 +50,21 @@ jobs:
       - look_for_release
     if: ${{ needs.look_for_release.outputs.release_found == 'true' }}
     outputs:
-      version: ${{ steps.semver_parser.outputs.fullversion }}
-      major: ${{ steps.semver_parser.outputs.major }}
-      minor: ${{ steps.semver_parser.outputs.minor }}
-      patch: ${{ steps.semver_parser.outputs.patch }}
-      prerelease: ${{ steps.semver_parser.outputs.prerelease }}
+      version: '1.5.0'
+      major: '1'
+      minor: '5'
+      patch: '0'
+      prerelease: 'false'
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-
-      - name: Read version from VERSION file
-        run: |
-          VERSION=$(cat VERSION)
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
-        
-      - name: Parse semver string
-        id: semver_parser
-        uses: booxmedialtd/ws-action-parse-semver@7784200024d6b3fc01253e617ec0168daf603de3 # v1.4.7
-        with:
-          input_string: ${{ env.VERSION }}
-          version_extractor_regex: '(.*)$'
-
-      - name: check if tag already exists
-        uses: mukunku/tag-exists-action@bdad1eaa119ce71b150b952c97351c75025c06a9 # v1.6.0
-        id: tag_exists
-        with:
-          tag: ${{ env.VERSION }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: fail if tag already exists
-        if: ${{ steps.tag_exists.outputs.exists == 'true' }}
-        run: exit 1
-
-  publish-release:
-    permissions:
-      contents: write
-    needs:
-      - look_for_release
-      - semver
-    if: ${{ needs.look_for_release.outputs.release_found == 'true' }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: ncipollo/release-action@440c8c1cb0ed28b9f43e4d1d670870f059653174 # v1.16.0
-        with:
-          body: |
-            #### Download Kong Gateway Operator ${{ needs.semver.outputs.version }}:
-
-            - [Docker Image](https://hub.docker.com/r/${{ vars.DOCKERHUB_IMAGE_NAME }}/tags?name=${{ needs.semver.outputs.version }})
-            - [Get started](https://github.com/Kong/gateway-operator/blob/main/README.md)
-
-            #### Links:
-
-            - [Changelog](https://github.com/Kong/gateway-operator/blob/main/CHANGELOG.md#v${{ needs.semver.outputs.major }}${{ needs.semver.outputs.minor }}${{ needs.semver.outputs.patch }}${{ needs.semver.outputs.prerelease }})
-
-          token: ${{ secrets.GITHUB_TOKEN }}
-          tag: v${{ needs.semver.outputs.version }}
-          commit: ${{ github.sha }}
-          prerelease: ${{ needs.look_for_release.outputs.release_type == 'prerelease' }}
 
   create-release-branch:
     permissions:
       contents: write
     needs:
       - look_for_release
-      - publish-release
       - semver
     # NOTE: only create a release branch if the release is not a patch release
     # or a prerelease.
@@ -132,40 +81,3 @@ jobs:
           # https://github.com/peterjgrainger/action-create-branch?tab=readme-ov-file#branch
           branch: 'refs/heads/release/v${{ needs.semver.outputs.major }}.${{ needs.semver.outputs.minor }}.x'
           sha: '${{ github.sha }}'
-
-  create-cherry-pick-branch-to-main:
-    permissions:
-      contents: write
-    needs:
-      - look_for_release
-      - publish-release
-      - semver
-    if: ${{ needs.look_for_release.outputs.release_found == 'true' && needs.semver.outputs.patch != '0' && needs.semver.outputs.prerelease == '' && needs.look_for_release.outputs.release_latest == 'true' && github.ref_name != 'main' }}
-    env:
-      CHERRYPICK_BRANCH: cherry-pick/${{ github.sha }}-to-main
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        with:
-          fetch-depth: 0
-
-      - name: Configure git user
-        run: |
-          git config --global user.name "Kong's Team k8s bot"
-          git config --global user.email "team-k8s+github-bot@konghq.com"
-
-      - name: Cherry-pick commit
-        run: |
-          git checkout -b ${{ env.CHERRYPICK_BRANCH }} main
-          git cherry-pick ${{ github.sha }}
-          # Amend the commit message to avoid infinite loop of this workflow (it's triggered by the commit message).
-          git commit --amend -m "chore: cherry-pick ${{ needs.semver.outputs.version }} commit (${{ github.sha }}) onto main"
-
-      - uses: peter-evans/create-pull-request@271a8d0340265f705b14b6d32b9829c1cb33d45e # v7.0.6
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ env.CHERRYPICK_BRANCH }}
-          base: main
-          delete-branch: true
-          title: '[cherry-pick] ${{ needs.semver.outputs.version }} - ${{ github.sha }}'
-          body: 'Cherry picking ${{ needs.semver.outputs.version }} commit (${{ github.sha }}) onto main'
